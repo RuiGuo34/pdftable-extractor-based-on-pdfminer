@@ -33,7 +33,6 @@ function parseBorderLine (content) {
 			block.push(temp.substr(0, end));
 		}
 	}
-	
 	return block;
 }
 
@@ -73,9 +72,13 @@ function getCellInfo(block) {
 		var single_coordinate = [left, top, width, height];
 		coordinate.push(single_coordinate);
 	}
-
-	//extract the row intersect pixel position from coordinate array
+	//given the starting coordinate of the pixel, find all the possible point intersection
+	//therefore at the moment, need to find the smallest starting row and column.
 	var row_test = coordinate[0][1]; //i.e. in this example, 13255, there may be some cases that row_test varies in 1...
+	//make sure that row_test is the smallest row. pdf rendering might not is sorted order
+	for (var i = 0; i < coordinate.length; i++) {
+		if (row_test > coordinate[i][1]) row_test = coordinate[i][1];
+	}
 
 	var col = [];
 
@@ -86,8 +89,13 @@ function getCellInfo(block) {
 			}
 		}
 	}
+	// console.log(col);
+	var col_test = col[0]; // in here we need to check if the col_test is the smallest as well
 
-	var col_test = col[0];
+	for (var i = 0; i < col.length; i++) {
+		if (col_test > col[i]) col_test = col[i];
+	}
+
 	var row = [];
 	for (var i = 0; i < coordinate.length; i++) {
 		if ((coordinate[i][0] >= col_test && coordinate[i][0] <= col_test + 1) && coordinate[i][2] != 0) {
@@ -96,7 +104,7 @@ function getCellInfo(block) {
 			}
 		}
 	}
-
+	// console.log(row);
 	var row_length = row.length;
 	var col_length = col.length;
 
@@ -218,7 +226,45 @@ function fillCell(cell_pos, text_info) {
 		}
 		table_data.push(cell_data);
 	}
+
+
+	for (var i = 0; i < table_data.length;) {
+		var flag = true;
+		for (var j = 0; j < table_data[0].length; j++) {
+			if (table_data[i][j] != '') flag = false;
+		}
+		if (flag) {
+			table_data.splice(i,1);
+		}
+		else {
+			i++;
+		}
+	}
 	return table_data;
+}
+
+function writeToFile(table_data) {
+	var fs = require('fs');
+	var res = '';
+	for (var i = 0; i < table_data.length; i++) {
+		for (var j = 0; j < table_data[0].length; j++) {
+			if (!j) {
+				res += table_data[i][j];
+			}
+			else {
+				res += '\t' + table_data[i][j];
+			}
+		}
+		res += '\n';
+	}
+	console.log(res);
+	fs.writeFile("/Users/Legolas/Documents/pdftests/Medicare.txt", res, function(err) {
+    	if(err) {
+        	return console.log(err);
+    	}	
+
+    	console.log("The file was saved!");
+	});
 }
 
 function extractTableData(pagenum, filedir) {
@@ -227,18 +273,19 @@ function extractTableData(pagenum, filedir) {
 
 	//parse the border line
 	var block = parseBorderLine(pageContent);
-	
+
 	//parse each border line info and retrieve the cell information(i.e. coordinate of upperleft,lowerright point)
 	var cell_pos = getCellInfo(block);
 
 	var text_info = extractTextInfo(pageContent);
 	//locate the text content inside each cell
 	var table_data = fillCell(cell_pos, text_info);
-	
+
+	writeToFile(table_data);
 	return table_data;
 }
 
-filename = '/Users/Legolas/Documents/pdftests/Physician.html';
-page_number = 2;
+filename = '/Users/Legolas/Documents/pdftests/Medicare.html';
+page_number = 18;
 table_res = extractTableData(page_number, filename);
-console.log(table_res);
+// console.log(table_res);
