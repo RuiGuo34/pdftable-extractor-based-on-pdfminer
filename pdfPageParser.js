@@ -9,6 +9,10 @@ function getIndicesOf(str, keywords) {
 	return indices;
 }
 
+function sortNumber(a,b) {
+	return a - b;
+}
+
 function parseBorderLine (content) {
 	var indexes = [], i = -1;
 	//mark: sometimes the color of the table is not black (fixed)
@@ -72,46 +76,89 @@ function getCellInfo(block) {
 		var single_coordinate = [left, top, width, height];
 		coordinate.push(single_coordinate);
 	}
+	console.log(coordinate);
+
 	//given the starting coordinate of the pixel, find all the possible point intersection
 	//therefore at the moment, need to find the smallest starting row and column.
-	var row_test = coordinate[0][1]; //i.e. in this example, 13255, there may be some cases that row_test varies in 1...
+	// var row_test = coordinate[0][1]; //i.e. in this example, 13255, there may be some cases that row_test varies in 1...
 	//make sure that row_test is the smallest row. pdf rendering might not is sorted order
-	for (var i = 0; i < coordinate.length; i++) {
-		if (row_test > coordinate[i][1]) row_test = coordinate[i][1];
-	}
+	// for (var i = 0; i < coordinate.length; i++) {
+	// 	if (row_test > coordinate[i][1]) row_test = coordinate[i][1];
+	// }
+	// console.log(coordinate);
 
-	var col = [];
+	// var col = [];
 
-	for (var i = 0; i < coordinate.length; i++) {
-		if ((coordinate[i][1] <= row_test+1 && coordinate[i][1] >= row_test) && coordinate[i][3] != 0) {
-			if (col.indexOf(coordinate[i][0]) == -1) {
-				col.push(coordinate[i][0]);
-			}
-		}
-	}
+	// //this block needs rewriting
+	// for (var i = 0; i < coordinate.length; i++) {
+	// 	if ((coordinate[i][1] <= row_test+1 && coordinate[i][1] >= row_test) && coordinate[i][3] != 0) {
+	// 		if (col.indexOf(coordinate[i][0]) == -1) {
+	// 			col.push(coordinate[i][0]);
+	// 		}
+	// 	}
+	// }
 	// console.log(col);
-	var col_test = col[0]; // in here we need to check if the col_test is the smallest as well
+	// var col_test = col[0]; // in here we need to check if the col_test is the smallest as well
 
-	for (var i = 0; i < col.length; i++) {
-		if (col_test > col[i]) col_test = col[i];
-	}
+	// // for (var i = 0; i < col.length; i++) {
+	// // 	if (col_test > col[i]) col_test = col[i];
+	// // }
 
-	var row = [];
+	// var row = [];
+	// for (var i = 0; i < coordinate.length; i++) {
+	// 	if ((coordinate[i][0] >= col_test && coordinate[i][0] <= col_test + 1) && coordinate[i][2] != 0) {
+	// 		if (row.indexOf(coordinate[i][1] == -1)) {
+	// 			row.push(coordinate[i][1]);
+	// 		}
+	// 	}
+	// }
+
+	// var row_length = row.length;
+	// var col_length = col.length;
+
+	filter_x = [];
+	filter_y = [];
 	for (var i = 0; i < coordinate.length; i++) {
-		if ((coordinate[i][0] >= col_test && coordinate[i][0] <= col_test + 1) && coordinate[i][2] != 0) {
-			if (row.indexOf(coordinate[i][1] == -1)) {
-				row.push(coordinate[i][1]);
-			}
+		//recognize long vertical lines
+		if (coordinate[i][2] <= 1 && coordinate[i][3] > 10) {
+			filter_x.push(coordinate[i]);
+		}
+		if (coordinate[i][2] > 10 && coordinate[i][3] <= 1) {
+			filter_y.push(coordinate[i]);
 		}
 	}
-	// console.log(row);
-	var row_length = row.length;
-	var col_length = col.length;
+	col = [];
+	for (var i = 0; i < filter_x.length; i++) {
+		//column may contain duplicates, needs to remove dup
+		var curr = filter_x[i][0]; 
+		var dup_flag = true;
+		for (var j = 0; j < col.length; j++) {
+			if (col[j] == curr) dup_flag = false;
+		}
+		if (dup_flag) col.push(curr);
+	}
 
+	col.sort(sortNumber);
+
+	row = [];
+	for (var i = 0; i < filter_y.length; i++) {
+		var curr = filter_y[i][1];
+		var dup_flag = true;
+		for (var j = 0; j < row.length; j++) {
+			if (row[j] == curr) dup_flag = false;
+		}
+		if (dup_flag) row.push(curr);
+	}
+
+	row.sort(sortNumber);
+	// console.log("filter x\n", filter_x);
+	// console.log("filter y\n", filter_y);
+	// console.log("filtered row number\n", row);
+	// console.log("filtered col number\n", col);
 	cell_pos = []; //cell_pos position
-	for (var i = 0; i < row_length-1; i++) {
+	for (var i = 0; i < row.length-1; i++) {
 		var temp_row = [];
-		for (var j = 0; j < col_length-1; j++) {
+		for (var j = 0; j < col.length-1; j++) {
 			var upper_left = [col[j], row[i]];
 			var lower_right = [col[j+1], row[i+1]];
 			temp_row.push([upper_left,lower_right]);
@@ -227,16 +274,24 @@ function fillCell(cell_pos, text_info) {
 		table_data.push(cell_data);
 	}
 
-
 	for (var i = 0; i < table_data.length;) {
 		var flag = true;
-		for (var j = 0; j < table_data[0].length; j++) {
-			if (table_data[i][j] != '') flag = false;
+		for (var j = 0; j < table_data[i].length; j++) {
+			if (table_data[i][j] != '')	flag = false;
 		}
 		if (flag) {
 			table_data.splice(i,1);
 		}
 		else {
+			//remove redundant tab from the beginning
+			for (var j = 0; j < table_data[i].length;) {
+				if (table_data[i][j] == '') {
+					table_data[i].splice(j,1);
+				}
+				else {
+					j++;
+				}
+			}
 			i++;
 		}
 	}
@@ -258,11 +313,10 @@ function writeToFile(table_data) {
 		res += '\n';
 	}
 	console.log(res);
-	fs.writeFile("/Users/Legolas/Documents/pdftests/Medicare.txt", res, function(err) {
+	fs.writeFile("/Users/Legolas/Documents/pdftests/Open.txt", res, function(err) {
     	if(err) {
         	return console.log(err);
-    	}	
-
+    	}
     	console.log("The file was saved!");
 	});
 }
@@ -278,7 +332,7 @@ function extractTableData(pagenum, filedir) {
 	var cell_pos = getCellInfo(block);
 
 	var text_info = extractTextInfo(pageContent);
-	//locate the text content inside each cell
+	// locate the text content inside each cell
 	var table_data = fillCell(cell_pos, text_info);
 
 	writeToFile(table_data);
@@ -286,6 +340,6 @@ function extractTableData(pagenum, filedir) {
 }
 
 filename = '/Users/Legolas/Documents/pdftests/Medicare.html';
-page_number = 18;
+page_number = 19;
 table_res = extractTableData(page_number, filename);
 // console.log(table_res);

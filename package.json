@@ -1,0 +1,22 @@
+{
+  "name": "pdfparser",
+  "version": "1.1.0",
+  "description": "this is helper file to pdfminer and helps extract table data and convert the table to csv files",
+  "main": "pdfPageParser.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dxdeidara/pdftable-extractor-based-on-pdfminer.git"
+  },
+  "author": "Rui Guo",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/dxdeidara/pdftable-extractor-based-on-pdfminer/issues"
+  },
+  "homepage": "https://github.com/dxdeidara/pdftable-extractor-based-on-pdfminer#readme",
+  "dependencies": {
+    "array-to-csv": "^1.0.1"
+  }
+}
