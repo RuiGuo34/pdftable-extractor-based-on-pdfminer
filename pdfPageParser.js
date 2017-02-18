@@ -76,7 +76,7 @@ function getCellInfo(block) {
 		var single_coordinate = [left, top, width, height];
 		coordinate.push(single_coordinate);
 	}
-	console.log(coordinate);
+	//console.log(coordinate);
 
 	//given the starting coordinate of the pixel, find all the possible point intersection
 	//therefore at the moment, need to find the smallest starting row and column.
@@ -321,25 +321,39 @@ function writeToFile(table_data) {
 	});
 }
 
-function extractTableData(pagenum, filedir) {
+function writeFile(content,dir) {
+	var fs = require('fs');
+	fs.writeFile(dir, content, function(err) {
+    	if(err) {
+        	return console.log(err);
+    	}
+    	console.log("The file was saved!");
+	});
+}
+
+function extractTableData(pagenum, filedir, outdir) {
 	//get the current page 
 	var pageContent = parseCurrPage(pagenum, filedir);
-
 	//parse the border line
 	var block = parseBorderLine(pageContent);
-
 	//parse each border line info and retrieve the cell information(i.e. coordinate of upperleft,lowerright point)
 	var cell_pos = getCellInfo(block);
-
+	
 	var text_info = extractTextInfo(pageContent);
 	// locate the text content inside each cell
 	var table_data = fillCell(cell_pos, text_info);
-
-	writeToFile(table_data);
+	
+	const toCSV = require('array-to-csv');
+	// console.log(toCSV(table_data));
+	writeFile(toCSV(table_data),outdir);
+	//writeToFile(table_data);
 	return table_data;
 }
 
 filename = '/Users/Legolas/Documents/pdftests/Medicare.html';
+outname = '/Users/Legolas/Documents/pdftests/Medicare.csv';
+//essentially we don't need the page specified as we need a range that tells
+//us the starting point and ending point of the table.
 page_number = 19;
-table_res = extractTableData(page_number, filename);
+table_res = extractTableData(page_number, filename, outname);
 // console.log(table_res);
